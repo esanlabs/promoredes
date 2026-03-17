@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campaña Corporativa #SoyDPA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f8fafc; font-family: 'Segoe UI', sans-serif; }
+        #video-container {
+            position: relative; width: 100%; max-width: 500px; aspect-ratio: 1/1;
+            overflow: hidden; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+        }
+        video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        #frame-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 10; display: none;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- Pantalla de Carga -->
+    <div id="loader" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center">
+        <div class="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+        <p class="mt-4 text-slate-600 font-medium">Sincronizando campaña...</p>
+    </div>
+
+    <!-- Header Dinámico -->
+    <header class="text-center mb-6">
+        <h1 id="promo-title" class="text-3xl font-extrabold text-slate-800 tracking-tight px-4 capitalize italic">Cargando...</h1>
+        <p id="promo-hashtag" class="text-indigo-600 mt-1 font-bold text-lg">#...</p>
+    </header>
+
+    <main class="w-full flex flex-col items-center gap-6">
+        <div id="video-container" class="bg-slate-200">
+            <video id="video" autoplay playsinline></video>
+            <!-- El atributo 'crossorigin' es vital para poder usar la imagen en el canvas -->
+            <img id="frame-overlay" src="" alt="Marco de Campaña" crossorigin="anonymous">
+        </div>
+
+        <!-- Botón de Captura -->
+        <div id="controls" class="flex flex-col items-center gap-4 w-full max-w-xs">
+            <button id="capture-btn" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold text-lg shadow-xl hover:bg-black transition-transform active:scale-95">
+                Capturar Momento
+            </button>
+        </div>
+
+        <!-- Sección de Resultados (Oculta por defecto) -->
+        <div id="share-section" class="hidden flex flex-col items-center gap-6 w-full max-w-sm bg-white p-6 rounded-[2rem] shadow-2xl border border-slate-100">
+            <div class="text-center">
+                <h2 class="text-xl font-bold text-slate-800">¡Te ves excelente!</h2>
+                <p id="promo-copy" class="text-sm text-slate-500 mt-2 px-2 italic"></p>
+            </div>
+            
+            <img id="photo-preview" class="w-full rounded-2xl shadow-inner border border-slate-50" src="" alt="Vista previa">
+            
+            <!-- Redes Sociales -->
+            <div class="grid grid-cols-3 gap-4 w-full">
+                <button onclick="handleShare('facebook')" class="flex flex-col items-center gap-2 group">
+                    <div class="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center group-hover:scale-110 transition-transform font-bold">FB</div>
+                    <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Facebook</span>
+                </button>
+                <button onclick="handleShare('linkedin')" class="flex flex-col items-center gap-2 group">
+                    <div class="w-12 h-12 bg-blue-800 text-white rounded-full flex items-center justify-center group-hover:scale-110 transition-transform font-bold">IN</div>
+                    <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">LinkedIn</span>
+                </button>
+                <button onclick="handleShare('instagram')" class="flex flex-col items-center gap-2 group">
+                    <div class="w-12 h-12 bg-gradient-to-tr from-orange-400 to-fuchsia-600 text-white rounded-full flex items-center justify-center group-hover:scale-110 transition-transform font-bold">IG</div>
+                    <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Instagram</span>
+                </button>
+            </div>
+
+            <!-- Botón de Copiar Copy -->
+            <button onclick="copyContent()" class="w-full py-4 bg-indigo-50 text-indigo-700 rounded-xl font-bold text-sm border-2 border-indigo-100 hover:bg-indigo-100 transition-colors">
+                Copiar Texto Corporativo
+            </button>
+
+            <button onclick="location.reload()" class="text-slate-400 text-xs font-medium underline">Intentar otra toma</button>
+        </div>
+    </main>
+
+    <!-- Canvas para procesar la foto -->
+    <canvas id="result-canvas" width="1080" height="1080" class="hidden"></canvas>
+
+    <script>
+        /**
+         * CONFIGURACIÓN DE LA APP SCRIPT
+         * Sustituye esta URL por la URL de implementación que te dé Google Apps Script
+         */
+        const APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzHIYnUrNt5y76iIzNVAJKe8MMfo2jFUdolE7FBSRl4UfuI3WbzNHPM7v2TIfvTxkUNRA/exec"; 
+
+        let campaignData = {
+            promo: "Campaña Corporativa",
+            copy: "¡Uniendo esfuerzos!",
+            hashtag: "#SoyDPA",
+            urlmarco: ""
+        };
+
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('result-canvas');
+        const frameImg = document.getElementById('frame-overlay');
+        const loader = document.getElementById('loader');
+
+        // Función para cargar datos desde Apps Script
+        async function fetchCampaignFromScript() {
+            try {
+                if (APP_SCRIPT_URL === "URL_DE_TU_IMPLEMENTACION_APPS_SCRIPT") {
+                    console.error("Falta configurar la URL de Apps Script.");
+                    // Datos de fallback por si falla la carga
+                    updateUI();
+                } else {
+                    const response = await fetch(APP_SCRIPT_URL);
+                    const data = await response.json();
+                    
+                    campaignData = {
+                        promo: data.promo || "Nueva Campaña",
+                        copy: data.copy || "Publicado con #SoyDPA",
+                        hashtag: data.hashtag || "#SoyDPA",
+                        urlmarco: data.urlmarco || ""
+                    };
+                    updateUI();
+                }
+            } catch (err) {
+                console.error("Error sincronizando datos:", err);
+            } finally {
+                loader.classList.add('hidden');
+                initCamera();
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('promo-title').textContent = campaignData.promo;
+            document.getElementById('promo-hashtag').textContent = campaignData.hashtag;
+            document.getElementById('promo-copy').textContent = campaignData.copy;
+            if(campaignData.urlmarco) {
+                frameImg.src = campaignData.urlmarco;
+                frameImg.style.display = 'block';
+            }
+        }
+
+        async function initCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "user" }, 
+                    audio: false 
+                });
+                video.srcObject = stream;
+            } catch (err) {
+                alert("Error: Para participar necesitas activar la cámara.");
+            }
+        }
+
+        // Evento de captura de imagen
+        document.getElementById('capture-btn').addEventListener('click', () => {
+            const ctx = canvas.getContext('2d');
+            
+            // 1. Dibujar el video (espejado para que se vea como selfie real)
+            ctx.save();
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+            ctx.restore();
+            
+            // 2. Dibujar el marco encima (si existe)
+            if (frameImg.src) {
+                ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
+            }
+
+            // 3. Generar vista previa
+            document.getElementById('photo-preview').src = canvas.toDataURL('image/png');
+            
+            // Interfaz
+            document.getElementById('video-container').classList.add('hidden');
+            document.getElementById('controls').classList.add('hidden');
+            document.getElementById('share-section').classList.remove('hidden');
+            document.querySelector('header').classList.add('hidden');
+        });
+
+        // Copiar texto de campaña
+        function copyContent() {
+            const fullText = `${campaignData.copy} ${campaignData.hashtag}`;
+            navigator.clipboard.writeText(fullText).then(() => {
+                alert("¡Copiado! Ahora puedes pegarlo en tu publicación.");
+            });
+        }
+
+        // Lógica para descargar y redirigir
+        function handleShare(platform) {
+            // Descargar la foto procesada
+            const link = document.createElement('a');
+            link.download = `Campaña_${campaignData.promo.replace(/\s+/g, '_')}.png`;
+            link.href = document.getElementById('photo-preview').src;
+            link.click();
+
+            setTimeout(() => {
+                const shareUrl = window.location.href;
+                let url = "";
+                if(platform === 'facebook') url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+                if(platform === 'linkedin') url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+                if(platform === 'instagram') {
+                    alert("Foto descargada correctamente. Entra a Instagram, selecciona la foto y pega el texto copiado anteriormente.");
+                    return;
+                }
+                if(url) window.open(url, '_blank');
+            }, 800);
+        }
+
+        // Iniciar flujo
+        fetchCampaignFromScript();
+    </script>
+</body>
+</html>
