@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Editor de Foto #SoyDPA</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Editor de Foto #SoyDPA</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
         body { background-color: #f8fafc; font-family: 'Segoe UI', system-ui, sans-serif; overflow-x: hidden; }
-        
+ 
         #editor-viewport {
             position: relative;
             width: 100%;
@@ -20,7 +20,7 @@
             cursor: move;
             touch-action: none;
         }
-
+ 
         #user-photo {
             position: absolute;
             top: 0;
@@ -30,7 +30,7 @@
             will-change: transform;
             display: none;
         }
-
+ 
         #frame-overlay {
             position: absolute;
             top: 0;
@@ -41,7 +41,7 @@
             z-index: 10;
             object-fit: contain;
         }
-
+ 
         .control-slider {
             -webkit-appearance: none;
             width: 100%;
@@ -50,7 +50,7 @@
             border-radius: 10px;
             outline: none;
         }
-
+ 
         .control-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             width: 26px;
@@ -61,56 +61,56 @@
             border: 3px solid white;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-    </style>
+</style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen p-4">
-
-    <header class="text-center mb-6">
-        <h1 class="text-3xl font-black text-slate-900 tracking-tight">#YoSoyESANDPA</h1>
-        <p class="text-slate-500 font-medium">Ajusta tu foto para la campaña</p>
-    </header>
-
-    <main class="w-full max-w-md flex flex-col items-center gap-6">
-        
-        <div id="editor-viewport">
-            <img id="user-photo" src="" alt="">
-            <img id="frame-overlay" src="https://i.imgur.com/DbhajNv.png" alt="Marco" crossorigin="anonymous">
-            
-            <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-8 text-center bg-slate-50">
-                <div class="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                </div>
-                <p class="font-bold text-slate-600">Sube tu foto</p>
-            </div>
-        </div>
-
-        <div class="w-full">
-            <input type="file" id="file-input" accept="image/*" class="hidden">
-            <button onclick="document.getElementById('file-input').click()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-200 active:scale-95 transition-all flex items-center justify-center gap-2">
+ 
+<header class="text-center mb-6">
+<h1 class="text-3xl font-black text-slate-900 tracking-tight">#YoSoyESANDPA</h1>
+<p class="text-slate-500 font-medium">Ajusta tu foto para la campaña</p>
+</header>
+ 
+<main class="w-full max-w-md flex flex-col items-center gap-6">
+ 
+<div id="editor-viewport">
+<img id="user-photo" src="" alt="">
+<img id="frame-overlay" src="https://i.imgur.com/DbhajNv.png" alt="Marco" crossorigin="anonymous">
+ 
+<div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-8 text-center bg-slate-50">
+<div class="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+</svg>
+</div>
+<p class="font-bold text-slate-600">Sube tu foto</p>
+</div>
+</div>
+ 
+<div class="w-full">
+<input type="file" id="file-input" accept="image/*" class="hidden">
+<button onclick="document.getElementById('file-input').click()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-200 active:scale-95 transition-all flex items-center justify-center gap-2">
                 Seleccionar Foto
-            </button>
-        </div>
-
-        <div id="edit-controls" class="hidden w-full bg-white p-6 rounded-3xl shadow-xl border border-slate-100 flex flex-col gap-6">
-            <div>
-                <div class="flex justify-between items-center mb-3">
-                    <label class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Ajuste de Zoom</label>
-                    <span id="zoom-val" class="text-sm font-bold text-indigo-600">100%</span>
-                </div>
-                <input type="range" id="zoom-slider" class="control-slider" min="0.1" max="5" step="0.0001" value="1">
-            </div>
-            
-            <button id="download-btn" class="w-full bg-slate-900 text-white py-4 rounded-xl font-black text-lg shadow-xl active:scale-95 transition-all">
+</button>
+</div>
+ 
+<div id="edit-controls" class="hidden w-full bg-white p-6 rounded-3xl shadow-xl border border-slate-100 flex flex-col gap-6">
+<div>
+<div class="flex justify-between items-center mb-3">
+<label class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Zoom de la Imagen</label>
+<span id="zoom-val" class="text-sm font-bold text-indigo-600">100%</span>
+</div>
+<input type="range" id="zoom-slider" class="control-slider" min="0.1" max="5" step="0.0001" value="1">
+</div>
+ 
+<button id="download-btn" class="w-full bg-slate-900 text-white py-4 rounded-xl font-black text-lg shadow-xl active:scale-95 transition-all">
                 Descargar Imagen Final
-            </button>
-        </div>
-    </main>
-
-    <canvas id="render-canvas" width="1080" height="1080" class="hidden"></canvas>
-
-    <script>
+</button>
+</div>
+</main>
+ 
+<canvas id="render-canvas" width="1080" height="1080" class="hidden"></canvas>
+ 
+<script>
         const fileInput = document.getElementById('file-input');
         const userPhoto = document.getElementById('user-photo');
         const zoomSlider = document.getElementById('zoom-slider');
@@ -118,122 +118,132 @@
         const emptyState = document.getElementById('empty-state');
         const editControls = document.getElementById('edit-controls');
         const renderCanvas = document.getElementById('render-canvas');
-        
+ 
         const FRAME_URL = "https://i.imgur.com/DbhajNv.png";
-        
+ 
         let state = {
             scale: 1,
             x: 0,
             y: 0,
             isDragging: false,
             lastX: 0,
-            lastY: 0
+            lastY: 0,
+            initialFillScale: 1 // Guardamos la escala base que llena el visor
         };
-
+ 
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
-
+ 
             const reader = new FileReader();
             reader.onload = (event) => {
                 userPhoto.src = event.target.result;
                 userPhoto.style.display = 'block';
                 emptyState.style.display = 'none';
                 editControls.classList.remove('hidden');
-                
+ 
                 userPhoto.onload = () => {
                     const viewSize = editorViewport.offsetWidth;
                     const imgW = userPhoto.naturalWidth;
                     const imgH = userPhoto.naturalHeight;
-                    
-                    // Escala inicial para cubrir el visor completamente
+ 
+                    // Escala para que la imagen CUBRA el visor (como object-fit: cover)
                     const scaleX = viewSize / imgW;
                     const scaleY = viewSize / imgH;
-                    const minScale = Math.max(scaleX, scaleY);
-                    
-                    state.scale = minScale;
+                    const fillScale = Math.max(scaleX, scaleY);
+ 
+                    state.initialFillScale = fillScale;
+                    state.scale = fillScale;
+                    // Centrar inicialmente
                     state.x = (viewSize - imgW * state.scale) / 2;
                     state.y = (viewSize - imgH * state.scale) / 2;
-                    
-                    zoomSlider.min = minScale; // No permitir que sea más chica que el marco
-                    zoomSlider.max = minScale * 8;
-                    zoomSlider.value = state.scale;
-                    
+ 
+                    // El mínimo del slider es la escala que llena el visor
+                    zoomSlider.min = fillScale;
+                    zoomSlider.max = fillScale * 5;
+                    zoomSlider.value = fillScale;
+ 
                     updateUI();
                 };
             };
             reader.readAsDataURL(file);
         });
-
+ 
         zoomSlider.addEventListener('input', (e) => {
             const newScale = parseFloat(e.target.value);
             const viewSize = editorViewport.offsetWidth;
-            
-            // Zoom relativo al centro del visor
+ 
+            // Zoom relativo al centro del visor para que no se "vaya" la foto
             const centerX = viewSize / 2;
             const centerY = viewSize / 2;
-            
+ 
             state.x = centerX - (centerX - state.x) * (newScale / state.scale);
             state.y = centerY - (centerY - state.y) * (newScale / state.scale);
-            
+ 
             state.scale = newScale;
             updateUI();
         });
-
+ 
         function updateUI() {
             userPhoto.style.transform = `translate3d(${state.x}px, ${state.y}px, 0) scale(${state.scale})`;
-            const zoomPercent = Math.round((state.scale / zoomSlider.min) * 100);
+            // Mostramos el porcentaje relativo al tamaño inicial de "llenado"
+            const zoomPercent = Math.round((state.scale / state.initialFillScale) * 100);
             document.getElementById('zoom-val').textContent = zoomPercent + "%";
         }
-
+ 
+        // --- Lógica de Arrastre ---
         const moveStart = (e) => {
             if (!userPhoto.src) return;
             state.isDragging = true;
             state.lastX = e.touches ? e.touches[0].clientX : e.clientX;
             state.lastY = e.touches ? e.touches[0].clientY : e.clientY;
         };
-
+ 
         const moveUpdate = (e) => {
             if (!state.isDragging) return;
             if (e.touches) e.preventDefault();
-            
+ 
             const currentX = e.touches ? e.touches[0].clientX : e.clientX;
             const currentY = e.touches ? e.touches[0].clientY : e.clientY;
-            
+ 
             state.x += currentX - state.lastX;
             state.y += currentY - state.lastY;
-            
+ 
             state.lastX = currentX;
             state.lastY = currentY;
-            
+ 
             updateUI();
         };
-
+ 
         const moveEnd = () => state.isDragging = false;
-
+ 
         editorViewport.addEventListener('mousedown', moveStart);
         window.addEventListener('mousemove', moveUpdate);
         window.addEventListener('mouseup', moveEnd);
         editorViewport.addEventListener('touchstart', moveStart, {passive: false});
         window.addEventListener('touchmove', moveUpdate, {passive: false});
         window.addEventListener('touchend', moveEnd);
-
+ 
+        // --- Lógica de Descarga Sincronizada ---
         document.getElementById('download-btn').addEventListener('click', () => {
             const ctx = renderCanvas.getContext('2d');
+            // Limpiar y fondo blanco
             ctx.clearRect(0, 0, 1080, 1080);
             ctx.fillStyle = "#ffffff";
             ctx.fillRect(0, 0, 1080, 1080);
-            
-            // Factor de escala: Pantalla -> 1080px
+ 
+            // Factor de conversión entre pantalla (píxeles CSS) y descarga (1080px)
             const factor = 1080 / editorViewport.offsetWidth;
-
-            // Dibujar Foto escalada exactamente como se ve en pantalla
-            ctx.save();
-            ctx.translate(state.x * factor, state.y * factor);
-            ctx.scale(state.scale * factor, state.scale * factor);
-            ctx.drawImage(userPhoto, 0, 0);
-            ctx.restore();
-
+ 
+            // Calculamos dimensiones finales escaladas por el factor
+            const finalW = userPhoto.naturalWidth * state.scale * factor;
+            const finalH = userPhoto.naturalHeight * state.scale * factor;
+            const finalX = state.x * factor;
+            const finalY = state.y * factor;
+ 
+            // Dibujar Foto
+            ctx.drawImage(userPhoto, finalX, finalY, finalW, finalH);
+ 
             // Dibujar Marco arriba
             const imgMarco = new Image();
             imgMarco.crossOrigin = "anonymous";
@@ -246,6 +256,6 @@
                 link.click();
             };
         });
-    </script>
+</script>
 </body>
 </html>
