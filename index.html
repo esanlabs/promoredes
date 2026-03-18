@@ -8,7 +8,6 @@
     <style>
         body { background-color: #f8fafc; font-family: 'Segoe UI', system-ui, sans-serif; overflow-x: hidden; }
         
-        /* Contenedor del Editor */
         #editor-viewport {
             position: relative;
             width: 100%;
@@ -22,18 +21,16 @@
             touch-action: none;
         }
 
-        /* Foto del Usuario */
         #user-photo {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            /* El transform se maneja vía JS para evitar conflictos de origen */
+            top: 0;
+            left: 0;
+            transform-origin: 0 0;
             pointer-events: none;
             will-change: transform;
             display: none;
         }
 
-        /* Marco de la Campaña */
         #frame-overlay {
             position: absolute;
             top: 0;
@@ -45,7 +42,6 @@
             object-fit: contain;
         }
 
-        /* Estilos del Slider */
         .control-slider {
             -webkit-appearance: none;
             width: 100%;
@@ -71,12 +67,11 @@
 
     <header class="text-center mb-6">
         <h1 class="text-3xl font-black text-slate-900 tracking-tight">#YoSoyESANDPA</h1>
-        <p class="text-slate-500 font-medium">Personaliza tu foto de campaña</p>
+        <p class="text-slate-500 font-medium">Ajusta tu foto para la campaña</p>
     </header>
 
     <main class="w-full max-w-md flex flex-col items-center gap-6">
         
-        <!-- Área de Edición -->
         <div id="editor-viewport">
             <img id="user-photo" src="" alt="">
             <img id="frame-overlay" src="https://i.imgur.com/DbhajNv.png" alt="Marco" crossorigin="anonymous">
@@ -91,7 +86,6 @@
             </div>
         </div>
 
-        <!-- Botón de Carga -->
         <div class="w-full">
             <input type="file" id="file-input" accept="image/*" class="hidden">
             <button onclick="document.getElementById('file-input').click()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-200 active:scale-95 transition-all flex items-center justify-center gap-2">
@@ -99,14 +93,13 @@
             </button>
         </div>
 
-        <!-- Controles de Ajuste -->
         <div id="edit-controls" class="hidden w-full bg-white p-6 rounded-3xl shadow-xl border border-slate-100 flex flex-col gap-6">
             <div>
                 <div class="flex justify-between items-center mb-3">
                     <label class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Ajuste de Zoom</label>
                     <span id="zoom-val" class="text-sm font-bold text-indigo-600">100%</span>
                 </div>
-                <input type="range" id="zoom-slider" class="control-slider" min="0.1" max="10" step="0.001" value="1">
+                <input type="range" id="zoom-slider" class="control-slider" min="0.01" max="5" step="0.001" value="1">
             </div>
             
             <button id="download-btn" class="w-full bg-slate-900 text-white py-4 rounded-xl font-black text-lg shadow-xl active:scale-95 transition-all">
@@ -115,7 +108,6 @@
         </div>
     </main>
 
-    <!-- Canvas para exportación (1080x1080) -->
     <canvas id="render-canvas" width="1080" height="1080" class="hidden"></canvas>
 
     <script>
@@ -131,12 +123,11 @@
         
         let state = {
             scale: 1,
-            baseScale: 1,
-            x: 0, // Offset X desde el centro
-            y: 0, // Offset Y desde el centro
+            x: 0,
+            y: 0,
             isDragging: false,
-            startX: 0,
-            startY: 0
+            lastMouseX: 0,
+            lastMouseY: 0
         };
 
         fileInput.addEventListener('change', (e) => {
@@ -151,20 +142,20 @@
                 editControls.classList.remove('hidden');
                 
                 userPhoto.onload = () => {
-                    const viewW = editorViewport.offsetWidth;
-                    const viewH = editorViewport.offsetHeight;
+                    const viewSize = editorViewport.offsetWidth;
+                    const imgW = userPhoto.naturalWidth;
+                    const imgH = userPhoto.naturalHeight;
                     
-                    // Escala base para cubrir el visor
-                    const scaleX = viewW / userPhoto.naturalWidth;
-                    const scaleY = viewH / userPhoto.naturalHeight;
-                    state.baseScale = Math.max(scaleX, scaleY);
+                    // Escala inicial para cubrir el visor
+                    const minScale = viewSize / Math.min(imgW, imgH);
+                    state.scale = minScale;
                     
-                    state.scale = state.baseScale;
-                    state.x = 0; // Centrado
-                    state.y = 0; // Centrado
+                    // Centrar inicialmente
+                    state.x = (viewSize - imgW * state.scale) / 2;
+                    state.y = (viewSize - imgH * state.scale) / 2;
                     
-                    zoomSlider.min = state.baseScale * 0.2;
-                    zoomSlider.max = state.baseScale * 12; // Zoom extendido
+                    zoomSlider.min = minScale * 0.5;
+                    zoomSlider.max = minScale * 10;
                     zoomSlider.value = state.scale;
                     
                     updateUI();
@@ -174,85 +165,87 @@
         });
 
         zoomSlider.addEventListener('input', (e) => {
-            state.scale = parseFloat(e.target.value);
+            const newScale = parseFloat(e.target.value);
+            const viewSize = editorViewport.offsetWidth;
+            
+            // Ajustar posición para que el zoom sea hacia el centro del visor
+            const centerX = viewSize / 2;
+            const centerY = viewSize / 2;
+            
+            state.x = centerX - (centerX - state.x) * (newScale / state.scale);
+            state.y = centerY - (centerY - state.y) * (newScale / state.scale);
+            
+            state.scale = newScale;
             updateUI();
         });
 
         function updateUI() {
-            // Usamos transform con translate(-50%, -50%) para que el centro de la foto sea el eje
-            userPhoto.style.transform = `translate(calc(-50% + ${state.x}px), calc(-50% + ${state.y}px)) scale(${state.scale})`;
-            const zoomPercent = Math.round((state.scale / state.baseScale) * 100);
+            userPhoto.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.scale})`;
+            const zoomPercent = Math.round((state.scale / zoomSlider.min) * 50);
             document.getElementById('zoom-val').textContent = zoomPercent + "%";
         }
 
-        // Lógica de movimiento (Mouse y Touch)
         const moveStart = (e) => {
             if (!userPhoto.src) return;
             state.isDragging = true;
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            state.startX = clientX - state.x;
-            state.startY = clientY - state.y;
+            state.lastMouseX = e.touches ? e.touches[0].clientX : e.clientX;
+            state.lastMouseY = e.touches ? e.touches[0].clientY : e.clientY;
         };
 
         const moveUpdate = (e) => {
             if (!state.isDragging) return;
             if (e.touches) e.preventDefault();
+            
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            state.x = clientX - state.startX;
-            state.y = clientY - state.startY;
+            
+            state.x += clientX - state.lastMouseX;
+            state.y += clientY - state.lastMouseY;
+            
+            state.lastMouseX = clientX;
+            state.lastMouseY = clientY;
+            
             updateUI();
         };
 
         const moveEnd = () => state.isDragging = false;
 
-        editorViewport.addEventListener('mousedown', moveStart);
-        window.addEventListener('mousemove', moveUpdate);
-        window.addEventListener('mouseup', moveEnd);
-        editorViewport.addEventListener('touchstart', moveStart, {passive: false});
-        window.addEventListener('touchmove', moveUpdate, {passive: false});
-        window.addEventListener('touchend', moveEnd);
+            editorViewport.addEventListener('mousedown', moveStart);
+            window.addEventListener('mousemove', moveUpdate);
+            window.addEventListener('mouseup', moveEnd);
+            editorViewport.addEventListener('touchstart', moveStart, {passive: false});
+            window.addEventListener('touchmove', moveUpdate, {passive: false});
+            window.addEventListener('touchend', moveEnd);
 
-        // Exportación Final
-        document.getElementById('download-btn').addEventListener('click', async () => {
+        document.getElementById('download-btn').addEventListener('click', () => {
             const ctx = renderCanvas.getContext('2d');
+            ctx.clearRect(0, 0, 1080, 1080);
             
-            // 1. Limpiar y fondo blanco
+            // Fondo blanco
             ctx.fillStyle = "#ffffff";
             ctx.fillRect(0, 0, 1080, 1080);
             
+            // Factor de conversión exacto entre visor y 1080px
             const factor = 1080 / editorViewport.offsetWidth;
 
-            // 2. Dibujar Foto del Usuario
+            // Dibujar Foto
             ctx.save();
-            // Mover al centro del canvas
-            ctx.translate(540 + (state.x * factor), 540 + (state.y * factor));
-            // Escalar
+            ctx.translate(state.x * factor, state.y * factor);
             ctx.scale(state.scale * factor, state.scale * factor);
-            // Dibujar centrando la imagen sobre el punto translate
-            ctx.drawImage(userPhoto, -userPhoto.naturalWidth / 2, -userPhoto.naturalHeight / 2);
+            ctx.drawImage(userPhoto, 0, 0);
             ctx.restore();
 
-            // 3. Dibujar Marco
+            // Dibujar Marco
             const imgMarco = new Image();
             imgMarco.crossOrigin = "anonymous";
-            // Cache busting para evitar problemas de CORS en móviles
             imgMarco.src = FRAME_URL + "?t=" + Date.now();
-            
             imgMarco.onload = () => {
                 ctx.drawImage(imgMarco, 0, 0, 1080, 1080);
-                
-                try {
-                    const link = document.createElement('a');
-                    link.download = "YoSoyESANDPA.png";
-                    link.href = renderCanvas.toDataURL('image/png', 1.0);
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                } catch (err) {
-                    alert("Error al descargar. Intenta manteniendo presionada la imagen para guardar.");
-                }
+                const dataUrl = renderCanvas.toDataURL('image/png', 1.0);
+                const link = document.createElement('a');
+                link.download = "YoSoyESANDPA.png";
+                link.href = dataUrl;
+                link.click();
             };
         });
     </script>
