@@ -2,37 +2,34 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Editor de Foto #SoyDPA</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #f1f5f9; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background-color: #f1f5f9; font-family: 'Segoe UI', system-ui, sans-serif; overflow-x: hidden; }
         
-        /* Contenedor del Editor 1:1 */
         #editor-viewport {
             position: relative;
             width: 100%;
             max-width: 500px;
             aspect-ratio: 1 / 1;
             overflow: hidden;
-            border-radius: 20px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15);
             background-color: #ffffff;
             cursor: move;
-            touch-action: none;
+            touch-action: none; /* Crucial para evitar scroll mientras se arrastra */
         }
 
-        /* La foto que sube el usuario */
         #user-photo {
             position: absolute;
             top: 0;
             left: 0;
-            transform-origin: center center;
+            transform-origin: 0 0; /* Cambio a 0,0 para facilitar el cálculo de posición */
             pointer-events: none;
             will-change: transform;
         }
 
-        /* El marco PNG transparente */
         #frame-overlay {
             position: absolute;
             top: 0;
@@ -47,120 +44,85 @@
         .control-slider {
             -webkit-appearance: none;
             width: 100%;
-            height: 8px;
+            height: 10px;
             background: #e2e8f0;
-            border-radius: 10px;
+            border-radius: 12px;
             outline: none;
         }
 
         .control-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 24px;
-            height: 24px;
+            width: 28px;
+            height: 28px;
             background: #4f46e5;
             border-radius: 50%;
             cursor: pointer;
-            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.4);
-            border: 2px solid white;
-            transition: transform 0.1s ease;
-        }
-
-        .control-slider::-webkit-slider-thumb:active {
-            transform: scale(1.1);
+            border: 3px solid white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
     </style>
 </head>
-<body class="flex flex-col items-center justify-center min-h-screen p-4 md:p-8">
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
 
-    <!-- Header -->
-    <header class="text-center mb-8">
-        <h1 class="text-3xl font-black text-slate-900 tracking-tight">#SoyDPA</h1>
-        <p class="text-slate-500 font-medium">Personaliza tu foto de perfil para la campaña</p>
+    <header class="text-center mb-6">
+        <h1 class="text-3xl font-black text-slate-900 tracking-tight">#YoSoyESANDPA</h1>
+        <p class="text-slate-500 font-medium">Ajusta tu foto dentro del marco oficial</p>
     </header>
 
-    <main class="w-full max-w-lg flex flex-col items-center gap-8">
+    <main class="w-full max-w-md flex flex-col items-center gap-6">
         
-        <!-- Vista previa del Editor -->
         <div id="editor-viewport">
             <img id="user-photo" src="" alt="" style="display:none;">
-            <!-- URL Directa del Marco definida localmente -->
             <img id="frame-overlay" src="https://i.imgur.com/DbhajNv.png" alt="Marco" crossorigin="anonymous">
             
-            <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-8 text-center bg-slate-50">
-                <div class="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4">
+            <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-8 text-center">
+                <div class="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                 </div>
-                <p class="font-bold text-slate-600">Comienza subiendo una foto</p>
-                <p class="text-xs text-slate-400 mt-1 uppercase tracking-wider">Formato recomendado: Cuadrado o Vertical</p>
+                <p class="font-bold text-slate-600">Sube tu foto de perfil</p>
             </div>
         </div>
 
-        <!-- Acciones Principales -->
         <div class="w-full flex flex-col gap-4">
             <input type="file" id="file-input" accept="image/*" class="hidden">
-            <button onclick="document.getElementById('file-input').click()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                </svg>
-                Seleccionar Foto
+            <button onclick="document.getElementById('file-input').click()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-200 active:scale-95 transition-transform flex items-center justify-center gap-2">
+                Subir Foto
             </button>
         </div>
 
-        <!-- Controles de Edición -->
-        <div id="edit-controls" class="hidden w-full bg-white p-6 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 flex flex-col gap-6">
+        <div id="edit-controls" class="hidden w-full bg-white p-6 rounded-3xl shadow-xl border border-slate-100 flex flex-col gap-6">
             <div>
                 <div class="flex justify-between items-center mb-3">
-                    <label class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Ajuste de Zoom</label>
-                    <span id="zoom-val" class="text-sm font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">100%</span>
+                    <label class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Tamaño de Imagen</label>
+                    <span id="zoom-val" class="text-sm font-bold text-indigo-600">100%</span>
                 </div>
-                <input type="range" id="zoom-slider" class="control-slider" min="0.1" max="4" step="0.01" value="1">
+                <input type="range" id="zoom-slider" class="control-slider" min="0.1" max="10" step="0.01" value="1">
             </div>
             
-            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                <p class="text-xs text-slate-500 text-center leading-relaxed">
-                    Mueve la foto con el dedo o el mouse para encuadrarla dentro del marco.
-                </p>
-            </div>
-            
-            <button id="download-btn" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-lg hover:bg-black transition-all shadow-2xl flex items-center justify-center gap-3 active:scale-[0.98]">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                Guardar Imagen Final
+            <button id="download-btn" class="w-full bg-slate-900 text-white py-4 rounded-xl font-black text-lg shadow-xl active:scale-95 transition-transform">
+                Descargar Imagen Final
             </button>
         </div>
-
-        <!-- Footer Info -->
-        <footer id="share-info" class="hidden w-full text-center pb-8">
-             <button onclick="copyContent()" class="text-slate-400 hover:text-indigo-600 text-xs font-bold flex items-center justify-center gap-2 mx-auto transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                </svg>
-                COPIAR HASHTAG #SOYDPA
-             </button>
-        </footer>
     </main>
 
-    <!-- Canvas oculto para renderizado 1080x1080 -->
     <canvas id="render-canvas" width="1080" height="1080" class="hidden"></canvas>
 
     <script>
-        // Configuración estática
-        const CAMPAIGN_HASHTAG = "#SoyDPA";
-        const FRAME_URL = "https://i.imgur.com/DbhajNv.png";
-        
         const fileInput = document.getElementById('file-input');
         const userPhoto = document.getElementById('user-photo');
-        const frameOverlay = document.getElementById('frame-overlay');
         const zoomSlider = document.getElementById('zoom-slider');
         const editorViewport = document.getElementById('editor-viewport');
         const emptyState = document.getElementById('empty-state');
         const editControls = document.getElementById('edit-controls');
+        const renderCanvas = document.getElementById('render-canvas');
+        
+        const FRAME_URL = "https://i.imgur.com/DbhajNv.png";
         
         let state = {
             scale: 1,
+            baseScale: 1,
             x: 0,
             y: 0,
             isDragging: false,
@@ -168,7 +130,6 @@
             startY: 0
         };
 
-        // 1. Manejo de archivo cargado
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -179,132 +140,110 @@
                 userPhoto.style.display = 'block';
                 emptyState.style.display = 'none';
                 editControls.classList.remove('hidden');
-                document.getElementById('share-info').classList.remove('hidden');
                 
                 userPhoto.onload = () => {
-                    const ratioWidth = editorViewport.offsetWidth / userPhoto.naturalWidth;
-                    const ratioHeight = editorViewport.offsetHeight / userPhoto.naturalHeight;
-                    state.scale = Math.max(ratioWidth, ratioHeight);
-                    state.x = (editorViewport.offsetWidth - userPhoto.naturalWidth * state.scale) / 2;
-                    state.y = (editorViewport.offsetHeight - userPhoto.naturalHeight * state.scale) / 2;
+                    const viewW = editorViewport.offsetWidth;
+                    const viewH = editorViewport.offsetHeight;
                     
-                    zoomSlider.min = state.scale * 0.5;
-                    zoomSlider.max = state.scale * 4;
+                    // Calculamos la escala mínima para llenar el recuadro
+                    const scaleX = viewW / userPhoto.naturalWidth;
+                    const scaleY = viewH / userPhoto.naturalHeight;
+                    state.baseScale = Math.max(scaleX, scaleY);
+                    
+                    // Aplicamos la escala base y centramos
+                    state.scale = state.baseScale;
+                    state.x = (viewW - userPhoto.naturalWidth * state.scale) / 2;
+                    state.y = (viewH - userPhoto.naturalHeight * state.scale) / 2;
+                    
+                    // Configuramos el slider: mínimo 50% del tamaño base, máximo 1000%
+                    zoomSlider.min = state.baseScale * 0.5;
+                    zoomSlider.max = state.baseScale * 10;
                     zoomSlider.value = state.scale;
                     
-                    updateZoomDisplay();
-                    updateTransform();
+                    updateUI();
                 };
             };
             reader.readAsDataURL(file);
         });
 
-        // 2. Controles de Zoom
         zoomSlider.addEventListener('input', (e) => {
+            const oldScale = state.scale;
             state.scale = parseFloat(e.target.value);
-            updateZoomDisplay();
-            updateTransform();
+            
+            // Ajustar X e Y para que el zoom parezca hacerse al centro
+            const viewW = editorViewport.offsetWidth;
+            const viewH = editorViewport.offsetHeight;
+            state.x -= (userPhoto.naturalWidth * (state.scale - oldScale)) / 2;
+            state.y -= (userPhoto.naturalHeight * (state.scale - oldScale)) / 2;
+            
+            updateUI();
         });
 
-        function updateZoomDisplay() {
-            const percent = Math.round((state.scale / zoomSlider.min) * 50); 
-            document.getElementById('zoom-val').textContent = percent + "%";
-        }
-
-        function updateTransform() {
+        function updateUI() {
             userPhoto.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.scale})`;
+            const zoomPercent = Math.round((state.scale / state.baseScale) * 100);
+            document.getElementById('zoom-val').textContent = zoomPercent + "%";
         }
 
-        // 3. Lógica de Arrastre
-        const startDrag = (e) => {
+        // Eventos de arrastre
+        const moveStart = (e) => {
             if (!userPhoto.src) return;
             state.isDragging = true;
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
             state.startX = clientX - state.x;
             state.startY = clientY - state.y;
-            editorViewport.style.cursor = 'grabbing';
         };
 
-        const onDrag = (e) => {
+        const moveUpdate = (e) => {
             if (!state.isDragging) return;
-            if(e.touches) e.preventDefault();
+            if (e.touches) e.preventDefault();
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
             state.x = clientX - state.startX;
             state.y = clientY - state.startY;
-            updateTransform();
+            updateUI();
         };
 
-        const stopDrag = () => {
-            state.isDragging = false;
-            editorViewport.style.cursor = 'move';
-        };
+        const moveEnd = () => state.isDragging = false;
 
-        editorViewport.addEventListener('mousedown', startDrag);
-        window.addEventListener('mousemove', onDrag);
-        window.addEventListener('mouseup', stopDrag);
-        editorViewport.addEventListener('touchstart', startDrag, { passive: false });
-        window.addEventListener('touchmove', onDrag, { passive: false });
-        window.addEventListener('touchend', stopDrag);
+        editorViewport.addEventListener('mousedown', moveStart);
+        window.addEventListener('mousemove', moveUpdate);
+        window.addEventListener('mouseup', moveEnd);
+        editorViewport.addEventListener('touchstart', moveStart, {passive: false});
+        window.addEventListener('touchmove', moveUpdate, {passive: false});
+        window.addEventListener('touchend', moveEnd);
 
-        // 4. Renderizado Final Corregido
-        document.getElementById('download-btn').addEventListener('click', () => {
-            const canvas = document.getElementById('render-canvas');
-            const ctx = canvas.getContext('2d');
+        // Descarga
+        document.getElementById('download-btn').addEventListener('click', async () => {
+            const ctx = renderCanvas.getContext('2d');
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, 1080, 1080);
             
-            // Aseguramos que el canvas esté limpio
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            const s2c = 1080 / editorViewport.offsetWidth;
+            const factor = 1080 / editorViewport.offsetWidth;
 
-            // Primero: Dibujamos la foto del usuario
+            // Dibujar Foto
             ctx.save();
-            const fX = state.x * s2c;
-            const fY = state.y * s2c;
-            const fS = state.scale * s2c;
-            
-            ctx.translate(fX, fY);
-            ctx.scale(fS, fS);
-            
-            // Dibujamos la imagen del usuario
+            ctx.translate(state.x * factor, state.y * factor);
+            ctx.scale(state.scale * factor, state.scale * factor);
             ctx.drawImage(userPhoto, 0, 0);
             ctx.restore();
 
-            // Segundo: Dibujamos el marco encima
-            // Usamos una nueva imagen para asegurar que el evento onload dispare la descarga
+            // Dibujar Marco
             const imgMarco = new Image();
             imgMarco.crossOrigin = "anonymous";
-            // Forzamos la recarga del marco para evitar problemas de caché en el canvas
-            imgMarco.src = FRAME_URL + "?t=" + new Date().getTime();
-            
+            imgMarco.src = FRAME_URL + "?t=" + Date.now();
             imgMarco.onload = () => {
                 ctx.drawImage(imgMarco, 0, 0, 1080, 1080);
-                
-                // Generar descarga solo después de que el marco se haya dibujado
-                try {
-                    const dataUrl = canvas.toDataURL('image/png', 1.0);
-                    const link = document.createElement('a');
-                    link.download = `Foto_Perfil_SoyDPA.png`;
-                    link.href = dataUrl;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                } catch (err) {
-                    console.error("Error al exportar canvas:", err);
-                    alert("Hubo un problema al generar la imagen. Inténtalo de nuevo.");
-                }
-            };
-            
-            imgMarco.onerror = () => {
-                alert("Error al cargar el marco corporativo.");
+                const link = document.createElement('a');
+                link.download = "YoSoyESANDPA.png";
+                link.href = renderCanvas.toDataURL('image/png', 1.0);
+                link.click();
             };
         });
 
         function copyContent() {
-            navigator.clipboard.writeText(CAMPAIGN_HASHTAG).then(() => {
-                alert("Hashtag copiado: " + CAMPAIGN_HASHTAG);
-            });
+            navigator.clipboard.writeText("#YoSoyESANDPA").then(() => alert("Hashtag copiado"));
         }
     </script>
 </body>
