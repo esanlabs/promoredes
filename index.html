@@ -14,7 +14,7 @@
             max-width: 500px;
             aspect-ratio: 1 / 1;
             overflow: hidden;
-            border-radius: 20px;
+            border-radius: 24px;
             box-shadow: 0 20px 50px -12px rgba(0,0,0,0.15);
             background-color: #ffffff;
             cursor: move;
@@ -99,7 +99,7 @@
                     <label class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Ajuste de Zoom</label>
                     <span id="zoom-val" class="text-sm font-bold text-indigo-600">100%</span>
                 </div>
-                <input type="range" id="zoom-slider" class="control-slider" min="0.01" max="5" step="0.001" value="1">
+                <input type="range" id="zoom-slider" class="control-slider" min="0.1" max="5" step="0.0001" value="1">
             </div>
             
             <button id="download-btn" class="w-full bg-slate-900 text-white py-4 rounded-xl font-black text-lg shadow-xl active:scale-95 transition-all">
@@ -126,8 +126,8 @@
             x: 0,
             y: 0,
             isDragging: false,
-            lastMouseX: 0,
-            lastMouseY: 0
+            lastX: 0,
+            lastY: 0
         };
 
         fileInput.addEventListener('change', (e) => {
@@ -146,16 +146,17 @@
                     const imgW = userPhoto.naturalWidth;
                     const imgH = userPhoto.naturalHeight;
                     
-                    // Escala inicial para cubrir el visor
-                    const minScale = viewSize / Math.min(imgW, imgH);
-                    state.scale = minScale;
+                    // Escala inicial para cubrir el visor completamente
+                    const scaleX = viewSize / imgW;
+                    const scaleY = viewSize / imgH;
+                    const minScale = Math.max(scaleX, scaleY);
                     
-                    // Centrar inicialmente
+                    state.scale = minScale;
                     state.x = (viewSize - imgW * state.scale) / 2;
                     state.y = (viewSize - imgH * state.scale) / 2;
                     
-                    zoomSlider.min = minScale * 0.5;
-                    zoomSlider.max = minScale * 10;
+                    zoomSlider.min = minScale; // No permitir que sea más chica que el marco
+                    zoomSlider.max = minScale * 8;
                     zoomSlider.value = state.scale;
                     
                     updateUI();
@@ -168,7 +169,7 @@
             const newScale = parseFloat(e.target.value);
             const viewSize = editorViewport.offsetWidth;
             
-            // Ajustar posición para que el zoom sea hacia el centro del visor
+            // Zoom relativo al centro del visor
             const centerX = viewSize / 2;
             const centerY = viewSize / 2;
             
@@ -180,71 +181,68 @@
         });
 
         function updateUI() {
-            userPhoto.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.scale})`;
-            const zoomPercent = Math.round((state.scale / zoomSlider.min) * 50);
+            userPhoto.style.transform = `translate3d(${state.x}px, ${state.y}px, 0) scale(${state.scale})`;
+            const zoomPercent = Math.round((state.scale / zoomSlider.min) * 100);
             document.getElementById('zoom-val').textContent = zoomPercent + "%";
         }
 
         const moveStart = (e) => {
             if (!userPhoto.src) return;
             state.isDragging = true;
-            state.lastMouseX = e.touches ? e.touches[0].clientX : e.clientX;
-            state.lastMouseY = e.touches ? e.touches[0].clientY : e.clientY;
+            state.lastX = e.touches ? e.touches[0].clientX : e.clientX;
+            state.lastY = e.touches ? e.touches[0].clientY : e.clientY;
         };
 
         const moveUpdate = (e) => {
             if (!state.isDragging) return;
             if (e.touches) e.preventDefault();
             
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const currentX = e.touches ? e.touches[0].clientX : e.clientX;
+            const currentY = e.touches ? e.touches[0].clientY : e.clientY;
             
-            state.x += clientX - state.lastMouseX;
-            state.y += clientY - state.lastMouseY;
+            state.x += currentX - state.lastX;
+            state.y += currentY - state.lastY;
             
-            state.lastMouseX = clientX;
-            state.lastMouseY = clientY;
+            state.lastX = currentX;
+            state.lastY = currentY;
             
             updateUI();
         };
 
         const moveEnd = () => state.isDragging = false;
 
-            editorViewport.addEventListener('mousedown', moveStart);
-            window.addEventListener('mousemove', moveUpdate);
-            window.addEventListener('mouseup', moveEnd);
-            editorViewport.addEventListener('touchstart', moveStart, {passive: false});
-            window.addEventListener('touchmove', moveUpdate, {passive: false});
-            window.addEventListener('touchend', moveEnd);
+        editorViewport.addEventListener('mousedown', moveStart);
+        window.addEventListener('mousemove', moveUpdate);
+        window.addEventListener('mouseup', moveEnd);
+        editorViewport.addEventListener('touchstart', moveStart, {passive: false});
+        window.addEventListener('touchmove', moveUpdate, {passive: false});
+        window.addEventListener('touchend', moveEnd);
 
         document.getElementById('download-btn').addEventListener('click', () => {
             const ctx = renderCanvas.getContext('2d');
             ctx.clearRect(0, 0, 1080, 1080);
-            
-            // Fondo blanco
             ctx.fillStyle = "#ffffff";
             ctx.fillRect(0, 0, 1080, 1080);
             
-            // Factor de conversión exacto entre visor y 1080px
+            // Factor de escala: Pantalla -> 1080px
             const factor = 1080 / editorViewport.offsetWidth;
 
-            // Dibujar Foto
+            // Dibujar Foto escalada exactamente como se ve en pantalla
             ctx.save();
             ctx.translate(state.x * factor, state.y * factor);
             ctx.scale(state.scale * factor, state.scale * factor);
             ctx.drawImage(userPhoto, 0, 0);
             ctx.restore();
 
-            // Dibujar Marco
+            // Dibujar Marco arriba
             const imgMarco = new Image();
             imgMarco.crossOrigin = "anonymous";
             imgMarco.src = FRAME_URL + "?t=" + Date.now();
             imgMarco.onload = () => {
                 ctx.drawImage(imgMarco, 0, 0, 1080, 1080);
-                const dataUrl = renderCanvas.toDataURL('image/png', 1.0);
                 const link = document.createElement('a');
                 link.download = "YoSoyESANDPA.png";
-                link.href = dataUrl;
+                link.href = renderCanvas.toDataURL('image/png', 1.0);
                 link.click();
             };
         });
