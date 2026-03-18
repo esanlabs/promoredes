@@ -184,13 +184,11 @@
                 userPhoto.onload = () => {
                     const ratioWidth = editorViewport.offsetWidth / userPhoto.naturalWidth;
                     const ratioHeight = editorViewport.offsetHeight / userPhoto.naturalHeight;
-                    // Escala mínima para cubrir todo el contenedor
                     state.scale = Math.max(ratioWidth, ratioHeight);
-                    // Centrar inicialmente
                     state.x = (editorViewport.offsetWidth - userPhoto.naturalWidth * state.scale) / 2;
                     state.y = (editorViewport.offsetHeight - userPhoto.naturalHeight * state.scale) / 2;
                     
-                    zoomSlider.min = state.scale * 0.5; // Permitir alejar un poco más del ajuste inicial
+                    zoomSlider.min = state.scale * 0.5;
                     zoomSlider.max = state.scale * 4;
                     zoomSlider.value = state.scale;
                     
@@ -209,7 +207,6 @@
         });
 
         function updateZoomDisplay() {
-            // El 100% será la escala base calculada inicialmente
             const percent = Math.round((state.scale / zoomSlider.min) * 50); 
             document.getElementById('zoom-val').textContent = percent + "%";
         }
@@ -218,7 +215,7 @@
             userPhoto.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.scale})`;
         }
 
-        // 3. Lógica de Arrastre (Mouse y Touch)
+        // 3. Lógica de Arrastre
         const startDrag = (e) => {
             if (!userPhoto.src) return;
             state.isDragging = true;
@@ -231,9 +228,7 @@
 
         const onDrag = (e) => {
             if (!state.isDragging) return;
-            // Prevenir scroll en móviles mientras se arrastra
             if(e.touches) e.preventDefault();
-            
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
             state.x = clientX - state.startX;
@@ -249,23 +244,21 @@
         editorViewport.addEventListener('mousedown', startDrag);
         window.addEventListener('mousemove', onDrag);
         window.addEventListener('mouseup', stopDrag);
-        
         editorViewport.addEventListener('touchstart', startDrag, { passive: false });
         window.addEventListener('touchmove', onDrag, { passive: false });
         window.addEventListener('touchend', stopDrag);
 
-        // 4. Renderizado Final y Descarga
+        // 4. Renderizado Final Corregido
         document.getElementById('download-btn').addEventListener('click', () => {
             const canvas = document.getElementById('render-canvas');
             const ctx = canvas.getContext('2d');
             
-            // Limpiar
+            // Aseguramos que el canvas esté limpio
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // Factor de conversión (De pantalla a 1080px)
             const s2c = 1080 / editorViewport.offsetWidth;
 
-            // Capa 1: Foto del usuario
+            // Primero: Dibujamos la foto del usuario
             ctx.save();
             const fX = state.x * s2c;
             const fY = state.y * s2c;
@@ -273,25 +266,38 @@
             
             ctx.translate(fX, fY);
             ctx.scale(fS, fS);
+            
+            // Dibujamos la imagen del usuario
             ctx.drawImage(userPhoto, 0, 0);
             ctx.restore();
 
-            // Capa 2: Marco PNG
-            // Cargamos una instancia limpia para evitar problemas de canvas sucio
+            // Segundo: Dibujamos el marco encima
+            // Usamos una nueva imagen para asegurar que el evento onload dispare la descarga
             const imgMarco = new Image();
             imgMarco.crossOrigin = "anonymous";
-            imgMarco.src = FRAME_URL;
+            // Forzamos la recarga del marco para evitar problemas de caché en el canvas
+            imgMarco.src = FRAME_URL + "?t=" + new Date().getTime();
+            
             imgMarco.onload = () => {
                 ctx.drawImage(imgMarco, 0, 0, 1080, 1080);
                 
-                // Generar descarga
-                const link = document.createElement('a');
-                link.download = `Foto_Perfil_SoyDPA_${Date.now()}.png`;
-                link.href = canvas.toDataURL('image/png', 1.0);
-                link.click();
+                // Generar descarga solo después de que el marco se haya dibujado
+                try {
+                    const dataUrl = canvas.toDataURL('image/png', 1.0);
+                    const link = document.createElement('a');
+                    link.download = `Foto_Perfil_SoyDPA.png`;
+                    link.href = dataUrl;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } catch (err) {
+                    console.error("Error al exportar canvas:", err);
+                    alert("Hubo un problema al generar la imagen. Inténtalo de nuevo.");
+                }
             };
+            
             imgMarco.onerror = () => {
-                alert("Error al cargar el marco. Por favor, revisa tu conexión.");
+                alert("Error al cargar el marco corporativo.");
             };
         });
 
