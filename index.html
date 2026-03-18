@@ -82,8 +82,8 @@
         <!-- Vista previa del Editor -->
         <div id="editor-viewport">
             <img id="user-photo" src="" alt="" style="display:none;">
-            <!-- Importante: crossorigin="anonymous" para evitar errores de seguridad al descargar -->
-            <img id="frame-overlay" src="" alt="Marco" crossorigin="anonymous">
+            <!-- Usamos el enlace directo de Imgur -->
+            <img id="frame-overlay" src="https://i.imgur.com/DbhajNv.png" alt="Marco" crossorigin="anonymous">
             
             <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-8 text-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -157,20 +157,9 @@
             startY: 0
         };
 
-        // Función para transformar URL de Google Drive a enlace directo de imagen
-        function getDirectLink(url) {
-            if (!url) return "";
-            if (url.includes('drive.google.com')) {
-                const id = url.split('/d/')[1]?.split('/')[0] || url.split('id=')[1]?.split('&')[0];
-                return id ? `https://lh3.googleusercontent.com/d/${id}` : url;
-            }
-            return url;
-        }
-
-        // 1. Obtener datos sincronizados
+        // 1. Obtener datos sincronizados y configurar marco
         async function init() {
             try {
-                // Añadimos t= para evitar caché
                 const response = await fetch(`${APP_SCRIPT_URL}?t=${Date.now()}`);
                 const data = await response.json();
                 
@@ -180,11 +169,16 @@
                     campaignData.copy = data.copy || "";
                     campaignData.hashtag = data.hashtag || "";
                     
-                    if (data.urlmarco) {
-                        const directUrl = getDirectLink(data.urlmarco);
-                        // Aplicamos el proxy de imagen y un caché buster para forzar carga
-                        frameOverlay.src = `${directUrl}?v=${Date.now()}`;
-                        console.log("Cargando marco desde:", directUrl);
+                    // Solo actualizamos el src si el script devuelve algo diferente al valor por defecto
+                    // He puesto la URL directa de Imgur como valor base en el HTML
+                    if (data.urlmarco && data.urlmarco.trim() !== "") {
+                        let finalUrl = data.urlmarco;
+                        // Corrección de URL de Imgur si es necesario
+                        if (finalUrl.includes('imgur.com') && !finalUrl.includes('i.imgur.com')) {
+                            const id = finalUrl.split('/').pop();
+                            finalUrl = `https://i.imgur.com/${id}.png`;
+                        }
+                        frameOverlay.src = finalUrl;
                     }
                 }
             } catch (e) {
@@ -193,9 +187,6 @@
                 loader.classList.add('hidden');
             }
         }
-
-        // Aseguramos que la imagen del marco tenga permisos CORS antes de cargarla
-        frameOverlay.setAttribute('crossorigin', 'anonymous');
 
         // 2. Manejo de archivo
         fileInput.addEventListener('change', (e) => {
@@ -213,7 +204,6 @@
                 userPhoto.onload = () => {
                     const ratioWidth = editorViewport.offsetWidth / userPhoto.naturalWidth;
                     const ratioHeight = editorViewport.offsetHeight / userPhoto.naturalHeight;
-                    // Escala inicial para cubrir el contenedor
                     state.scale = Math.max(ratioWidth, ratioHeight);
                     state.x = (editorViewport.offsetWidth - userPhoto.naturalWidth * state.scale) / 2;
                     state.y = (editorViewport.offsetHeight - userPhoto.naturalHeight * state.scale) / 2;
@@ -286,7 +276,6 @@
             ctx.drawImage(userPhoto, 0, 0);
             ctx.restore();
 
-            // Dibujamos el marco. Se usa un objeto Image nuevo para asegurar el CORS
             if (frameOverlay.src) {
                 const imgMarco = new Image();
                 imgMarco.crossOrigin = "anonymous";
@@ -299,7 +288,7 @@
                     link.click();
                 };
                 imgMarco.onerror = () => {
-                    alert("Error al procesar el marco corporativo. Por favor intenta de nuevo.");
+                    alert("Error al procesar el marco corporativo. Prueba usando el enlace directo de la imagen.");
                 };
             }
         });
